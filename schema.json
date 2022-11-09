@@ -1,0 +1,43 @@
+[
+    {
+        "database": "mecanizou_autoparts",
+        "index": "offers-index-001",
+        "nodes": {
+            "table": "offers",
+            "schema": "public",
+            "columns": [
+                "created_at",
+                "updated_at",
+                "offer_provider_name",
+                "offer_brand_name",
+                "offer_factory_code",
+                "offer_provider_reference",
+                "offer_factory_code_normalized",
+                "product_type",
+                "offer_factory_code",
+                "estimated_purchase_unit_price",
+                "description",
+                "description_normalized",
+                "estimated_purchase_unit_price",
+                "price_tracked_at",
+                "offer_image_url",
+                "stock_units",
+                "delivery_type",
+                "quantity_type",
+                "min_quantity",
+                "warehouse_uid",
+                "offer_provider_uid"
+            ],
+            "transform": {
+                "mapping": {
+                    "created_at": {
+                        "type": "date"
+                    },
+                    "updated_at": {
+                        "type": "date"
+                    }
+                }
+            }
+        }
+    }
+]
