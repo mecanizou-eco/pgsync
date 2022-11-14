@@ -117,7 +117,6 @@ class Base(object):
     def connect(self) -> None:
         """Connect to database."""
         try:
-            print('teste pqp')
             conn = self.engine.connect()
             conn.close()
         except Exception as e:

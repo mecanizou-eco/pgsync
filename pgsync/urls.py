@@ -79,8 +79,6 @@ def get_postgres_url(
     logger.debug("Connecting to Postgres without password.")
     return f"postgresql+{driver}://{user}@{host}:{port}/{database}"
 
-print('aloo')
-
 def get_redis_url(
     scheme: Optional[str] = None,
     host: Optional[str] = None,
@@ -97,6 +95,5 @@ def get_redis_url(
     if password:
         return f"{scheme}://:{quote_plus(password)}@{host}:{port}/{db}"
     logger.debug("Connecting to Redis without password.")
-    print('aloo')
     return f"{scheme}://{host}:{port}/{db}"
 

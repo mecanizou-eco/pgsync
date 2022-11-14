@@ -22,8 +22,6 @@ logger = logging.getLogger(__name__)
 HIGHLIGHT_START = "\033[4m"
 HIGHLIGHT_END = "\033[0m:"
 
-print('aloo')
-
 def timeit(func: Callable):
     def timed(*args, **kwargs):
         since: float = time()
