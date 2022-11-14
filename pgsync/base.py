@@ -114,10 +114,10 @@ class Base(object):
         self.__tables: dict = {}
         self.verbose: bool = verbose
         self._conn = None
-
     def connect(self) -> None:
         """Connect to database."""
         try:
+            print('teste pqp')
             conn = self.engine.connect()
             conn.close()
         except Exception as e:

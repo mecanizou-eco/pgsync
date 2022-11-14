@@ -67,9 +67,11 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
+print('aloo')
 
 class Sync(Base):
     """Main application class for Sync."""
+    print('aloo')
 
     def __init__(
         self,
@@ -80,6 +82,7 @@ class Sync(Base):
         **kwargs,
     ) -> None:
         """Constructor."""
+        print('aloo')
         self.index: str = document.get("index") or document["database"]
         self.pipeline: str = document.get("pipeline")
         self.plugins: list = document.get("plugins", [])
