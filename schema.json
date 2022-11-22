@@ -1,43 +1,146 @@
 [
     {
-        "database": "mecanizou_autoparts",
-        "index": "offers-index-001",
+        "database": "mec_autoparts",
+        "index": "offers-index-002",
         "nodes": {
-            "table": "offers",
+            "table": "autoparts",
             "schema": "public",
-            "columns": [
-                "created_at",
-                "updated_at",
-                "offer_provider_name",
-                "offer_brand_name",
-                "offer_factory_code",
-                "offer_provider_reference",
-                "offer_factory_code_normalized",
-                "product_type",
-                "offer_factory_code",
-                "estimated_purchase_unit_price",
-                "description",
-                "description_normalized",
-                "estimated_purchase_unit_price",
-                "price_tracked_at",
-                "offer_image_url",
-                "stock_units",
-                "delivery_type",
-                "quantity_type",
-                "min_quantity",
-                "warehouse_uid",
-                "offer_provider_uid"
-            ],
-            "transform": {
-                "mapping": {
-                    "created_at": {
-                        "type": "date"
-                    },
-                    "updated_at": {
-                        "type": "date"
+            "columns": ["id", "uid", "description", "factory_code"],
+            "children": [
+                {
+                    "table": "offers",
+                    "schema": "public",
+                    "columns": [
+                        "id",
+                        "uid",
+                        "offer_provider_reference",
+                        "offer_provider_name",
+                        "estimated_purchase_unit_price",
+                        "stock_units",
+                        "min_quantity",
+                        "offer_image_url",
+                        "quantity_type",
+                        "price_tracked_at",
+                        "delivery_type",
+                        "warehouse_uid",
+                        "offer_provider_uid"
+                    ],
+                    "relationship": {
+                        "type": "one_to_many",
+                        "variant": "object"
                     }
+                },
+                {
+                    "table": "factories",
+                    "label": "factory",
+                    "schema": "public",
+                    "columns": ["name"],
+                    "relationship": {
+                        "type": "one_to_one",
+                        "variant": "object"
+                    }
+                },
+                {
+                    "table": "components",
+                    "label": "component",
+                    "schema": "public",
+                    "columns": ["name"],
+                    "relationship": {
+                        "type": "one_to_one",
+                        "variant": "object"
+                    }
+                },
+                {
+                    "table": "technical_specs",
+                    "schema": "public",
+                    "columns": ["value"],
+                    "relationship": {
+                        "type": "one_to_many",
+                        "variant": "object"
+                    },
+                    "children": [
+                        {
+                            "table": "properties",
+                            "label": "property",
+                            "schema": "public",
+                            "columns": ["name"],
+                            "relationship": {
+                                "type": "one_to_one",
+                                "variant": "object"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "table": "applications",
+                    "schema": "public",
+                    "columns": ["vehicle_id"],
+                    "relationship": {
+                        "type": "one_to_many",
+                        "variant": "object"
+                    },
+                    "children": [
+                        {
+                            "table": "vehicles",
+                            "label": "vehicle",
+                            "schema": "public",
+                            "columns": ["version"],
+                            "relationship": {
+                                "type": "one_to_one",
+                                "variant": "object"
+                            },
+                            "children": [
+                                {
+                                    "table": "vehicle_models",
+                                    "label": "model",
+                                    "schema": "public",
+                                    "columns": ["name"],
+                                    "relationship": {
+                                        "type": "one_to_one",
+                                        "variant": "object"
+                                    }
+                                },
+                                {
+                                    "table": "vehicle_manufacturers",
+                                    "label": "manufacturer",
+                                    "schema": "public",
+                                    "columns": ["name"],
+                                    "relationship": {
+                                        "type": "one_to_one",
+                                        "variant": "object"
+                                    }
+                                },
+                                {
+                                    "table": "vehicle_engines",
+                                    "label": "engine",
+                                    "schema": "public",
+                                    "columns": [
+                                        "settings",
+                                        "name",
+                                        "code",
+                                        "power",
+                                        "capacity"
+                                    ],
+                                    "relationship": {
+                                        "type": "one_to_one",
+                                        "variant": "object"
+                                    }
+                                },
+                                {
+                                    "table": "vehicle_years",
+                                    "label": "years",
+                                    "schema": "public",
+                                    "columns": ["year"],
+                                    "relationship": {
+                                        "type": "one_to_many",
+                                        "variant": "object"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
-            }
+            ]
         }
     }
 ]
