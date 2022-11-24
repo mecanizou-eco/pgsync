@@ -23,7 +23,8 @@
                         "price_tracked_at",
                         "delivery_type",
                         "warehouse_uid",
-                        "offer_provider_uid"
+                        "offer_provider_uid",
+                        "isApiOffer"
                     ],
                     "relationship": {
                         "type": "one_to_many",
@@ -139,6 +140,24 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "table": "alternative_applications",
+                    "schema": "public",
+                    "columns": [
+                        "model",
+                        "manufacturer",
+                        "version",
+                        "car_power",
+                        "valve_number",
+                        "traction",
+                        "initial_year",
+                        "final_year"
+                    ],
+                    "relationship": {
+                        "type": "one_to_many",
+                        "variant": "object"
+                    }
                 }
             ]
         }
