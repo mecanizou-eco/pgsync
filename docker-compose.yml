@@ -14,7 +14,7 @@ services:
       org.label-schema.description: "Postgres to elasticsearch sync"
       com.label-schema.service-type: "daemon"
     depends_on:
-      - db-autoparts
+      - db-mecanicity
       - redis
 networks:
   inbound:
