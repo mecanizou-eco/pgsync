@@ -565,6 +565,9 @@ class Base(object):
                 self.execute(sa.DDL(query))
 
     def create_function(self, schema: str) -> None:
+        # TODO: check if make sense 
+        # if self._function_exists(schema):
+        #     return
         self.execute(
             CREATE_TRIGGER_TEMPLATE.replace(
                 MATERIALIZED_VIEW,

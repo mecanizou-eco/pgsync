@@ -7,30 +7,6 @@
             "columns": ["id", "uid", "description", "factory_code"],
             "children": [
                 {
-                    "table": "offers",
-                    "columns": [
-                        "id",
-                        "uid",
-                        "offer_provider_reference",
-                        "offer_provider_name",
-                        "offer_factory_code",
-                        "offer_brand_name",
-                        "estimated_purchase_unit_price",
-                        "stock_units",
-                        "min_quantity",
-                        "offer_image_url",
-                        "quantity_type",
-                        "price_tracked_at",
-                        "delivery_type",
-                        "warehouse_uid",
-                        "offer_provider_uid"
-                    ],
-                    "relationship": {
-                        "type": "one_to_many",
-                        "variant": "object"
-                    }
-                },
-                {
                     "table": "factories",
                     "label": "factory_name",
                     "columns": ["name"],

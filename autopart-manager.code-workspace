@@ -1,0 +1,20 @@
+{
+  "folders": [
+	{
+		"path": "../autopart-manager"
+	},
+	{
+		"path": "../index-manager"
+	},
+	{
+		"path": "."
+	},
+	{
+		"path": "../catalog-extractor"
+	},
+	{
+		"path": "../gambs"
+	}
+],
+  "settings": {}
+}
