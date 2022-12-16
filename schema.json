@@ -1,39 +1,11 @@
 [
     {
-        "database": "mec_autoparts",
+        "database": "mecanizou_autoparts",
         "index": "products-index-001",
         "nodes": {
             "table": "autoparts",
             "columns": ["id", "uid", "description", "factory_code"],
             "children": [
-                {
-                    "table": "offers",
-                    "columns": [
-                        "id",
-                        "uid",
-                        "offer_provider_reference",
-                        "offer_provider_name",
-                        "offer_factory_code",
-                        "offer_brand_name",
-                        "estimated_purchase_unit_price",
-                        "stock_units",
-                        "min_quantity",
-                        "offer_image_url",
-                        "quantity_type",
-                        "price_tracked_at",
-                        "delivery_type",
-                        "warehouse_uid",
-                        "offer_provider_uid"
-                    ],
-                    "relationship": {
-                        "type": "one_to_many",
-                        "variant": "object",
-                        "foreign_key": {
-                            "child": ["autopart_id"],
-                            "parent": ["id"]
-                        }
-                    }
-                },
                 {
                     "table": "factories",
                     "label": "factory_name",
@@ -43,7 +15,6 @@
                         "variant": "scalar"
                     }
                 },
-
                 {
                     "table": "autopart_medias",
                     "columns": ["url", "media_type"],
@@ -84,80 +55,6 @@
                     ]
                 },
                 {
-                    "table": "applications",
-                    "columns": ["initial_year", "final_year"],
-                    "relationship": {
-                        "type": "one_to_one",
-                        "variant": "scalar",
-                        "foreign_key": {
-                            "child": ["autopart_id"],
-                            "parent": ["id"]
-                        }
-                    },
-                    "children": [
-                        {
-                            "table": "vehicles",
-                            "columns": ["version"],
-                            "relationship": {
-                                "type": "one_to_many",
-                                "variant": "object",
-                                "foreign_key": {
-                                    "child": ["id"],
-                                    "parent": ["vehicle_id"]
-                                }
-                            },
-                            "children": [
-                                {
-                                    "table": "vehicle_models",
-                                    "label": "model_name",
-                                    "columns": ["name"],
-                                    "relationship": {
-                                        "type": "one_to_one",
-                                        "variant": "scalar",
-                                        "foreign_key": {
-                                            "child": ["id"],
-                                            "parent": ["model_id"]
-                                        }
-                                    }
-                                },
-                                {
-                                    "table": "vehicle_manufacturers",
-                                    "label": "manufacturer_name",
-                                    "columns": ["name"],
-                                    "relationship": {
-                                        "type": "one_to_one",
-                                        "variant": "scalar",
-                                        "foreign_key": {
-                                            "child": ["id"],
-                                            "parent": ["manufacturer_id"]
-                                        }
-                                    }
-                                },
-                                {
-                                    "table": "vehicle_engines",
-                                    "label": "engine",
-                                    "schema": "public",
-                                    "columns": [
-                                        "settings",
-                                        "name",
-                                        "code",
-                                        "power",
-                                        "capacity"
-                                    ],
-                                    "relationship": {
-                                        "type": "one_to_one",
-                                        "variant": "object",
-                                        "foreign_key": {
-                                            "child": ["id"],
-                                            "parent": ["engine_id"]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
                     "table": "alternative_applications",
                     "columns": [
                         "model",
@@ -177,6 +74,63 @@
                             "parent": ["id"]
                         }
                     }
+                },
+                {
+                    "table": "vehicles",
+                    "columns": ["version", "initial_year", "final_year"],
+                    "relationship": {
+                        "type": "one_to_many",
+                        "variant": "object",
+                        "through_tables": ["applications"]
+                    },
+                    "children": [
+                        {
+                            "table": "vehicle_models",
+                            "label": "model_name",
+                            "columns": ["name"],
+                            "relationship": {
+                                "type": "one_to_one",
+                                "variant": "scalar",
+                                "foreign_key": {
+                                    "child": ["id"],
+                                    "parent": ["model_id"]
+                                }
+                            }
+                        },
+                        {
+                            "table": "vehicle_manufacturers",
+                            "label": "manufacturer_name",
+                            "columns": ["name"],
+                            "relationship": {
+                                "type": "one_to_one",
+                                "variant": "scalar",
+                                "foreign_key": {
+                                    "child": ["id"],
+                                    "parent": ["manufacturer_id"]
+                                }
+                            }
+                        },
+                        {
+                            "table": "vehicle_engines",
+                            "label": "engine",
+                            "schema": "public",
+                            "columns": [
+                                "settings",
+                                "name",
+                                "code",
+                                "power",
+                                "capacity"
+                            ],
+                            "relationship": {
+                                "type": "one_to_one",
+                                "variant": "object",
+                                "foreign_key": {
+                                    "child": ["id"],
+                                    "parent": ["engine_id"]
+                                }
+                            }
+                        }
+                    ]
                 }
             ]
         }
