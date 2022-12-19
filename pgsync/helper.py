@@ -5,9 +5,9 @@ from typing import Optional
 
 import sqlalchemy as sa
 
-from .base import drop_database
+from .base import database_exists, drop_database
 from .sync import Sync
-from .utils import get_config, load_config
+from .utils import config_loader, get_config
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +22,14 @@ def teardown(
     validate: bool = False,
 ) -> None:
     """Teardown helper."""
-    config = get_config(config)
+    config: str = get_config(config)
 
-    for document in load_config(config):
+    for document in config_loader(config):
+
+        if not database_exists(document["database"]):
+            logger.warning(f'Database {document["database"]} does not exist')
+            continue
+
         sync: Sync = Sync(document, validate=validate)
         if truncate_db:
             try:

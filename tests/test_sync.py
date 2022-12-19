@@ -1,4 +1,5 @@
 """Sync tests."""
+import importlib
 import os
 from collections import namedtuple
 from typing import List
@@ -7,10 +8,17 @@ import pytest
 from mock import ANY, call, patch
 
 from pgsync.base import Base, Payload
-from pgsync.exc import PrimaryKeyNotFoundError, RDSError, SchemaError
+from pgsync.exc import (
+    InvalidTGOPError,
+    PrimaryKeyNotFoundError,
+    RDSError,
+    SchemaError,
+)
 from pgsync.node import Node
-from pgsync.settings import LOGICAL_SLOT_CHUNK_SIZE, REDIS_POLL_INTERVAL
-from pgsync.sync import Sync
+from pgsync.singleton import Singleton
+from pgsync.sync import settings, Sync
+
+from .testing_utils import override_env_var
 
 ROW = namedtuple("Row", ["data", "xid"])
 
@@ -20,6 +28,7 @@ def sync():
     _sync = Sync(
         {
             "index": "testdb",
+            "database": "testdb",
             "nodes": {
                 "table": "book",
                 "columns": ["isbn", "title", "description"],
@@ -40,6 +49,7 @@ def sync():
             },
         },
     )
+    Singleton._instances = {}
     yield _sync
     _sync.logical_slot_get_changes(
         f"{_sync.database}_testdb",
@@ -69,7 +79,7 @@ class TestSync(object):
                     txmin=None,
                     txmax=None,
                     upto_nchanges=None,
-                    limit=LOGICAL_SLOT_CHUNK_SIZE,
+                    limit=settings.LOGICAL_SLOT_CHUNK_SIZE,
                     offset=0,
                 )
                 mock_sync.assert_not_called()
@@ -86,7 +96,7 @@ class TestSync(object):
                     txmin=None,
                     txmax=None,
                     upto_nchanges=None,
-                    limit=LOGICAL_SLOT_CHUNK_SIZE,
+                    limit=settings.LOGICAL_SLOT_CHUNK_SIZE,
                     offset=0,
                 )
                 mock_sync.assert_not_called()
@@ -115,7 +125,7 @@ class TestSync(object):
                         txmin=None,
                         txmax=None,
                         upto_nchanges=None,
-                        limit=LOGICAL_SLOT_CHUNK_SIZE,
+                        limit=settings.LOGICAL_SLOT_CHUNK_SIZE,
                         offset=0,
                     )
                     mock_get.assert_called_once()
@@ -157,10 +167,12 @@ class TestSync(object):
 
     @patch("pgsync.sync.ElasticHelper")
     def test_sync_validate(self, mock_es):
+
         with pytest.raises(SchemaError) as excinfo:
             Sync(
                 document={
                     "index": "testdb",
+                    "database": "testdb",
                     "nodes": ["foo"],
                 },
                 verbose=False,
@@ -174,6 +186,7 @@ class TestSync(object):
         Sync(
             document={
                 "index": "testdb",
+                "database": "testdb",
                 "nodes": {"table": "book"},
                 "plugins": ["Hero"],
             },
@@ -208,6 +221,7 @@ class TestSync(object):
                 Sync(
                     document={
                         "index": "testdb",
+                        "database": "testdb",
                         "nodes": {"table": "book"},
                         "plugins": ["Hero"],
                     },
@@ -225,6 +239,7 @@ class TestSync(object):
                 Sync(
                     document={
                         "index": "testdb",
+                        "database": "testdb",
                         "nodes": {"table": "book"},
                         "plugins": ["Hero"],
                     },
@@ -242,6 +257,7 @@ class TestSync(object):
                 Sync(
                     document={
                         "index": "testdb",
+                        "database": "testdb",
                         "nodes": {"table": "book"},
                         "plugins": ["Hero"],
                     },
@@ -258,6 +274,7 @@ class TestSync(object):
                 Sync(
                     document={
                         "index": "testdb",
+                        "database": "testdb",
                         "nodes": {"table": "book"},
                         "plugins": ["Hero"],
                     },
@@ -272,6 +289,7 @@ class TestSync(object):
                 Sync(
                     document={
                         "index": "testdb",
+                        "database": "testdb",
                         "nodes": {"table": "book"},
                         "plugins": ["Hero"],
                     },
@@ -280,19 +298,36 @@ class TestSync(object):
                 excinfo.value
             )
 
+        with patch(
+            "pgsync.base.Base._materialized_views",
+            side_effect=RuntimeError("hey there"),
+        ):
+            with pytest.raises(RuntimeError) as excinfo:
+                Sync(
+                    document={
+                        "index": "testdb",
+                        "database": "testdb",
+                        "nodes": {"table": "book"},
+                        "plugins": ["Hero"],
+                    },
+                )
+                assert "hey there" in str(excinfo.value)
+
         Sync(
             document={
                 "index": "testdb",
+                "database": "testdb",
                 "nodes": {"table": "book"},
                 "plugins": ["Hero"],
             },
         )
+        # raise
 
     def test_status(self, sync):
         with patch("pgsync.sync.sys") as mock_sys:
             sync._status("mydb")
             mock_sys.stdout.write.assert_called_once_with(
-                "mydb testdb "
+                "mydb testdb:testdb "
                 "Xlog: [0] => "
                 "Db: [0] => "
                 "Redis: [total = 0 "
@@ -458,9 +493,8 @@ class TestSync(object):
                 new={"isbn": "aa1"},
             )
         ]
-        extra: dict = {}
         assert sync.es.doc_count == 0
-        _filters = sync._update_op(node, filters, payloads, extra)
+        _filters = sync._update_op(node, filters, payloads)
         sync.es.refresh("testdb")
         assert _filters == {"book": [{"isbn": "aa1"}]}
         assert sync.es.doc_count == 1
@@ -558,20 +592,6 @@ class TestSync(object):
         assert _filters == {"book": []}
 
     def test__payload(self, sync):
-        with patch("pgsync.sync.logger") as mock_logger:
-            with pytest.raises(RuntimeError):
-                for _ in sync._payloads(
-                    [
-                        Payload(
-                            tg_op="XXX",
-                            table="book",
-                            old={"id": 1},
-                        ),
-                    ]
-                ):
-                    pass
-            mock_logger.exception.assert_called_once_with("Unknown tg_op XXX")
-
         with patch("pgsync.sync.Sync._insert_op") as mock_op:
             with patch("pgsync.sync.logger") as mock_logger:
                 for _ in sync._payloads(
@@ -761,6 +781,7 @@ class TestSync(object):
                         join_queries=True,
                     )
                 mock_create_view.assert_called_once_with(
+                    "testdb",
                     "public",
                     {"publisher", "book"},
                     {"publisher": {"publisher_id", "id"}},
@@ -810,12 +831,81 @@ class TestSync(object):
             Payload(
                 tg_op="INSERT",
                 table="book",
+                new={"isbn": "002"},
+                schema="public",
+            ),
+        ]
+        for _ in sync._payloads(payloads):
+            pass
+
+    def test_payloads_invalid_tg_op(self, mocker, sync):
+        payloads: List[Payload] = [
+            Payload(
+                tg_op="FOO",
+                table="book",
                 old={"isbn": "001"},
                 new={"isbn": "002"},
                 schema="public",
             ),
         ]
-        sync._payloads(payloads)
+        with patch("pgsync.sync.logger") as mock_logger:
+            with pytest.raises(InvalidTGOPError):
+                for _ in sync._payloads(payloads):
+                    pass
+            mock_logger.exception.assert_called_once_with("Unknown tg_op FOO")
+
+    def test_payloads_in_batches(self, mocker, sync):
+        # inserting a root node
+        payloads: List[Payload] = [
+            Payload(
+                tg_op="INSERT",
+                table="book",
+                new={"isbn": "002"},
+                schema="public",
+            )
+        ] * 20
+        with patch("pgsync.sync.Sync.sync") as mock_sync:
+            with override_env_var(FILTER_CHUNK_SIZE="4"):
+                importlib.reload(settings)
+                for _ in sync._payloads(payloads):
+                    pass
+        assert mock_sync.call_count == 25
+        assert mock_sync.call_args_list[-1] == call(
+            filters={
+                "book": [
+                    {"isbn": "002"},
+                    {"isbn": "002"},
+                    {"isbn": "002"},
+                    {"isbn": "002"},
+                ]
+            },
+        )
+
+        # updating a child table
+        payloads: List[Payload] = [
+            Payload(
+                tg_op="UPDATE",
+                table="publisher",
+                new={"id": 1, "name": "foo"},
+                old={"id": 1},
+                schema="public",
+            )
+        ]
+        filters: dict = {
+            "book": [
+                {"isbn": "001"},
+            ],
+            "publisher": [
+                {"id": 1},
+            ],
+        }
+        with patch("pgsync.sync.Sync._update_op", return_value=filters):
+            with patch("pgsync.sync.Sync.sync") as mock_sync:
+                with override_env_var(FILTER_CHUNK_SIZE="1"):
+                    importlib.reload(settings)
+                    for _ in sync._payloads(payloads):
+                        pass
+                mock_sync.assert_called_once_with(filters=filters)
 
     @patch("pgsync.sync.compiled_query")
     def test_sync(self, mock_compiled_query, sync):
@@ -837,5 +927,5 @@ class TestSync(object):
         mock_on_publish.assert_called_once_with([ANY, ANY])
         mock_refresh_views.assert_called_once()
         mock_logger.debug.assert_called_once_with(f"poll_redis: {items}")
-        mock_time.sleep.assert_called_once_with(REDIS_POLL_INTERVAL)
+        mock_time.sleep.assert_called_once_with(settings.REDIS_POLL_INTERVAL)
         assert sync.count["redis"] == 2

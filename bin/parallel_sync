@@ -59,8 +59,8 @@ from pgsync.settings import BLOCK_SIZE, CHECKPOINT_PATH
 from pgsync.sync import Sync
 from pgsync.utils import (
     compiled_query,
+    config_loader,
     get_config,
-    load_config,
     show_settings,
     timeit,
 )
@@ -253,7 +253,6 @@ def multithreaded(
         queue.put(task)
 
     queue.join()  # block until all tasks are done
-
     logical_slot_changes(doc, verbose=verbose, validate=validate)
 
 
@@ -272,7 +271,6 @@ def multiprocess(
             list(executor.map(task.process, tasks))
         except Exception as e:
             sys.stdout.write(f"Exception: {e}\n")
-
     logical_slot_changes(doc, verbose=verbose, validate=validate)
 
 
@@ -287,13 +285,9 @@ def multithreaded_async(
     sys.stdout.write("Multi-threaded async\n")
     executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=nprocs)
     event_loop = asyncio.get_event_loop()
-    try:
-        event_loop.run_until_complete(
-            run_tasks(executor, tasks, doc, verbose=verbose, validate=validate)
-        )
-    finally:
-        event_loop.close()
-
+    event_loop.run_until_complete(
+        run_tasks(executor, tasks, doc, verbose=verbose, validate=validate)
+    )
     logical_slot_changes(doc, verbose=verbose, validate=validate)
 
 
@@ -314,9 +308,6 @@ def multiprocess_async(
         )
     except KeyboardInterrupt:
         pass
-    finally:
-        event_loop.close()
-
     logical_slot_changes(doc, verbose=verbose, validate=validate)
 
 
@@ -327,24 +318,19 @@ async def run_tasks(
     verbose: bool = False,
     validate: bool = False,
 ) -> None:
-    event_loop = asyncio.get_event_loop()
+    sync: Optional[Sync] = None
     if isinstance(executor, ThreadPoolExecutor):
         # threads can share a common Sync object
-        sync: Sync = Sync(doc, verbose=verbose, validate=validate)
-        tasks: list = [
+        sync = Sync(doc, verbose=verbose, validate=validate)
+    event_loop = asyncio.get_event_loop()
+    completed, pending = await asyncio.wait(
+        [
             event_loop.run_in_executor(
-                executor, run_task, task, sync, None, verbose, validate
+                executor, run_task, task, sync, doc, verbose, validate
             )
             for task in tasks
         ]
-    else:
-        tasks = [
-            event_loop.run_in_executor(
-                executor, run_task, task, None, doc, verbose, validate
-            )
-            for task in tasks
-        ]
-    completed, pending = await asyncio.wait(tasks)
+    )
     results: list = [task.result() for task in completed]
     print("results: {!r}".format(results))
     print("exiting")
@@ -418,14 +404,13 @@ def main(config, nprocs, mode, verbose):
     """
     TODO:
     - Track progress across cpus/threads
-    - Save ctid
     - Handle KeyboardInterrupt Exception
     """
 
     show_settings()
     config: str = get_config(config)
 
-    for document in load_config(config):
+    for document in config_loader(config):
         tasks: Generator = fetch_tasks(document)
         if mode == "synchronous":
             synchronous(tasks, document, verbose=verbose)
